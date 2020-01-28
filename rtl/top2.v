@@ -1,12 +1,14 @@
 `default_nettype none   
-//`define __ICARUS__ 0
+`define __ICARUS__ 0
 
 module top (
-    // 25MHz clock input
-    input wire clk,
-    input wire RSTN_BUTTON, // rstn,
-    // Led outputs
-    output wire [15:0] PMOD
+    input wire clk,	      // 25MHz clock input
+    input wire RSTN_BUTTON,   // rstn,
+    input wire rx,            // Tx from the computer
+    output wire [15:0] PMOD,   // Led outputs
+    //7 segments outputs
+    output wire [6:0] seg,
+    output wire [2:0] ca
   );
 
 //--------------------
@@ -80,6 +82,16 @@ module top (
         .D_IN_0(rstn_button_int)
     );
     `endif
+
+    //signals from UART
+    wire wr;
+    wire [7:0] data;
+
+    //local signals for UART
+    reg  wr1 = 1;
+    wire wr_f;
+    reg regData = 0;
+
 //--------------------
 // IP internal signals
 //--------------------
@@ -96,6 +108,7 @@ module top (
     //posicion de los elementos
     reg [9:0] HposSquare = 0;
     reg [9:0] VposSquare = 200;
+    wire [9:0] Hmovement = 0;
 
 
     reg [18:0] contador = 0;
@@ -184,7 +197,45 @@ module top (
        	end
     end
 
-    assign HposSquare_n = HposSquare + 1;
+    assign HposSquare_n = HposSquare + Hmovement;
+
+    assign Hmovement = (regData == 32) ? 0:
+		       (regData == 67) ? 1:
+		       (regData == 68) ? -1 : 0;
+
+
+//---------------------------
+//          UART-RX
+//---------------------------
+		
+
+	
+	rxuart #(.baudRate(115200), .if_parity(1'b0))
+		reciver (.i_clk(clk), .rst(rstn), .o_wr(wr), .o_data(data), .i_uart_rx(rx));
+
+	//flank detector and register for the data from the UART
+	always @(posedge clk) begin
+		if (!rstn) begin
+			wr1 <= 1;
+			regData <= 0;
+		end
+		else begin
+			wr1 <= wr;
+			if (wr_f)
+				regData <= data; 
+			else 
+				regData <= regData;
+		end
+	end
+	
+	assign wr_f = (wr & ~wr1);
+
+
+
+//-----------------
+//     7segs
+//-----------------
+	sevenSeg S7 (.clk(clk), .binary(regData), .seg(seg), .ca(ca));
 
   
 
