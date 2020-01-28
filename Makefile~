@@ -1,0 +1,5 @@
+VERILOG_FILES = rtl/top2.v  rtl/VgaSyncGen.v 
+# rx_uart.v  7seg/7seg.v 7seg/BCDto7Seg.v 7seg/BinToBCD.v
+PCF_FILE = FPGA/blackice.pcf
+
+include blackicemx.mk
