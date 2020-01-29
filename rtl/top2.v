@@ -1,12 +1,12 @@
 `default_nettype none   
-`define __ICARUS__ 0
+//`define __ICARUS__ 0
 
 module top (
     input wire clk,	      // 25MHz clock input
     input wire RSTN_BUTTON,   // rstn,
     input wire rx,            // Tx from the computer
     output wire [15:0] PMOD,   // Led outputs
-    //7 segments outputs
+    // segments outputs
     output wire [6:0] seg,
     output wire [2:0] ca
   );
@@ -90,7 +90,7 @@ module top (
     //local signals for UART
     reg  wr1 = 1;
     wire wr_f;
-    reg regData = 0;
+    reg [7:0] regData = 0;
 
 //--------------------
 // IP internal signals
@@ -108,11 +108,13 @@ module top (
     //posicion de los elementos
     reg [9:0] HposSquare = 0;
     reg [9:0] VposSquare = 200;
-    wire [9:0] Hmovement = 0;
-
+    wire [9:0] Hmovement;
+    wire [9:0] Vmovement;
 
     reg [18:0] contador = 0;
     wire [9:0] HposSquare_n;
+    wire [9:0] VposSquare_n;
+
     //RGB values assigment from pixel color register
     assign R0 = activevideo ? R_int[0] :0; 
     assign R1 = activevideo ? R_int[1] :0; 
@@ -190,19 +192,30 @@ module top (
 
                 //contador
 		contador <= (contador == limiteContador) ? 0 : contador + 1;
-		if (contador == limiteContador)
+		if (contador == limiteContador) begin
 			HposSquare <= HposSquare_n;
-		else
+			VposSquare <= VposSquare_n;
+		end
+		else begin
 			HposSquare <= HposSquare;
+			VposSquare <= VposSquare;
+		end
        	end
     end
 
     assign HposSquare_n = HposSquare + Hmovement;
+    assign VposSquare_n = VposSquare + Vmovement;
+
 
     assign Hmovement = (regData == 32) ? 0:
 		       (regData == 67) ? 1:
 		       (regData == 68) ? -1 : 0;
+   
+    assign Vmovement = (regData == 32) ? 0:
+		       (regData == 66) ? 1:
+		       (regData == 65) ? -1 : 0;
 
+    
 
 //---------------------------
 //          UART-RX
